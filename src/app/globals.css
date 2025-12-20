@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-gradient-start: #e8f4f8;
+  --bg-gradient-end: #d4e8ed;
+  --card-bg: #ffffff;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+  --accent-teal: #4ecdc4;
+  --accent-teal-dark: #3db9b1;
+  --text-primary: #2d3748;
+  --text-secondary: #718096;
+  --border-color: #e2e8f0;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Skeuomorphic card style */
+.sku-card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+}
+
+/* Inset/pressed style */
+.sku-inset {
+  background: linear-gradient(145deg, #f0f4f8, #ffffff);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.05), inset -2px -2px 5px rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+}
+
+/* Button style */
+.sku-button {
+  background: linear-gradient(145deg, #ffffff, #f0f4f8);
+  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.1), -2px -2px 6px rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+}
+
+.sku-button-active {
+  background: linear-gradient(145deg, var(--accent-teal), var(--accent-teal-dark));
+  color: white;
+  box-shadow: 3px 3px 8px rgba(78, 205, 196, 0.3), -2px -2px 6px rgba(255, 255, 255, 0.9);
+}
+
+/* Toggle switch */
+.sku-toggle {
+  width: 52px;
+  height: 28px;
+  background: linear-gradient(145deg, #e0e5ec, #f5f5f5);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.1), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+}
+
+.sku-toggle.active {
+  background: linear-gradient(145deg, var(--accent-teal), var(--accent-teal-dark));
+}
+
+.sku-toggle::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(145deg, #ffffff, #f0f0f0);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+}
+
+.sku-toggle.active::after {
+  left: 27px;
+}
+
+/* Missing card placeholder */
+.card-placeholder {
+  background: linear-gradient(145deg, #f5f8fa, #e8eef2);
+  border: 2px dashed #cbd5e0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+/* Progress bar */
+.progress-bar {
+  height: 6px;
+  background: linear-gradient(145deg, #e0e5ec, #f5f5f5);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-teal), #6ee7b7);
+  border-radius: 3px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Set header stylized text effect */
+.set-title {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #e53e3e, #dd6b20);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+}
+
+/* Card item - no transitions except hover */
+.card-item,
+.card-item * {
+  transition: none !important;
+}
+
+/* Card hover effect - only for card items */
+.card-item:hover {
+  transform: scale(1.02);
+  z-index: 10;
+}
+
+/* Slider styling */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: linear-gradient(145deg, #e0e5ec, #f5f5f5);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(145deg, var(--accent-teal), var(--accent-teal-dark));
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(145deg, var(--accent-teal), var(--accent-teal-dark));
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
