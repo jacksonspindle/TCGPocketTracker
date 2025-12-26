@@ -19,6 +19,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   collection    CardCollection[]
+  wishlist      Wishlist[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 }
@@ -63,6 +64,17 @@ model CardCollection {
   userId    String
   cardId    String   // TCGDex card ID (e.g., "A1-001")
   owned     Boolean  @default(true)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, cardId])
+  @@index([userId])
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  cardId    String   // TCGDex card ID (e.g., "A1-001")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 

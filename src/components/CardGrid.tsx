@@ -7,6 +7,7 @@ interface CardGridProps {
   cards: Card[];
   loading?: boolean;
   gridSize: number;
+  onCardClick?: (card: Card) => void;
 }
 
 const gridClasses: Record<number, string> = {
@@ -18,7 +19,7 @@ const gridClasses: Record<number, string> = {
   8: 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-8 xl:grid-cols-10',
 };
 
-export default function CardGrid({ cards, loading, gridSize }: CardGridProps) {
+export default function CardGrid({ cards, loading, gridSize, onCardClick }: CardGridProps) {
   const gridClass = gridClasses[gridSize] || gridClasses[5];
 
   if (loading) {
@@ -37,8 +38,8 @@ export default function CardGrid({ cards, loading, gridSize }: CardGridProps) {
     return (
       <div className="sku-card p-12 text-center">
         <div className="text-6xl mb-4">🔍</div>
-        <p className="text-gray-500 text-lg font-medium">No cards found</p>
-        <p className="text-gray-400 text-sm mt-1">Try adjusting your filters</p>
+        <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">No cards found</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Try adjusting your filters</p>
       </div>
     );
   }
@@ -46,7 +47,7 @@ export default function CardGrid({ cards, loading, gridSize }: CardGridProps) {
   return (
     <div className={`grid ${gridClass} gap-3`}>
       {cards.map((card) => (
-        <CardItem key={card.id} card={card} />
+        <CardItem key={card.id} card={card} onCardClick={onCardClick} />
       ))}
     </div>
   );

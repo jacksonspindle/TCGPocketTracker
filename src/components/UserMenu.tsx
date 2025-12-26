@@ -81,12 +81,17 @@ export default function UserMenu() {
               src={session.user.image}
               alt={session.user.name || 'User'}
               className="w-9 h-9 rounded-full"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+                target.nextElementSibling?.classList.remove('hidden')
+              }}
             />
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-white font-medium">
-              {session.user?.name?.[0] || 'U'}
-            </div>
-          )}
+          ) : null}
+          <div className={`w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-white font-medium ${session.user?.image ? 'hidden' : ''}`}>
+            {session.user?.name?.[0] || 'U'}
+          </div>
           {isSyncing && (
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center">
               <div className="w-2 h-2 border border-white border-t-transparent rounded-full animate-spin" />

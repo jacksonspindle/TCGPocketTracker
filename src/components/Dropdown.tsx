@@ -42,9 +42,9 @@ export default function Dropdown({ options, value, onChange, placeholder = 'Sele
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="px-4 py-2.5 bg-white text-gray-700 rounded-xl sku-button text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 flex items-center gap-2 min-w-[120px] justify-between"
+        className="px-4 py-2.5 text-gray-700 dark:text-gray-200 rounded-xl sku-button text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 flex items-center gap-2 min-w-[120px] justify-between"
       >
-        <span className={value ? 'text-gray-700' : 'text-gray-400'}>{displayText}</span>
+        <span className={value ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}>{displayText}</span>
         <svg
           className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -56,16 +56,16 @@ export default function Dropdown({ options, value, onChange, placeholder = 'Sele
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 w-full min-w-[160px] bg-white rounded-xl shadow-lg border border-gray-100 py-1 max-h-60 overflow-auto">
+        <div className="absolute z-50 mt-2 w-full min-w-[160px] bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 max-h-60 overflow-auto">
           {options.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => handleSelect(option.value)}
-              className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 ${
+              className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 option.value === value
-                  ? 'text-teal-600 font-medium bg-teal-50'
-                  : 'text-gray-700'
+                  ? 'text-teal-600 dark:text-teal-400 font-medium bg-teal-50 dark:bg-teal-900/30'
+                  : 'text-gray-700 dark:text-gray-200'
               }`}
             >
               {option.label}

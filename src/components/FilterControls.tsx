@@ -3,6 +3,8 @@
 import { FilterOptions, SortOptions, SortField } from '../types'
 import Dropdown from './Dropdown'
 
+type CollectionFilter = 'all' | 'owned' | 'missing' | 'wishlist'
+
 interface FilterControlsProps {
   filters: FilterOptions;
   sort: SortOptions;
@@ -11,8 +13,8 @@ interface FilterControlsProps {
   availableTypes: string[];
   availableRarities: string[];
   availableStages: string[];
-  showOwnedOnly: boolean;
-  onToggleOwnedOnly: () => void;
+  collectionFilter: CollectionFilter;
+  onCollectionFilterChange: (filter: CollectionFilter) => void;
   gridSize: number;
   onGridSizeChange: (size: number) => void;
 }
@@ -25,8 +27,8 @@ export default function FilterControls({
   availableTypes,
   availableRarities,
   availableStages,
-  showOwnedOnly,
-  onToggleOwnedOnly,
+  collectionFilter,
+  onCollectionFilterChange,
   gridSize,
   onGridSizeChange,
 }: FilterControlsProps) {
@@ -82,17 +84,55 @@ export default function FilterControls({
             placeholder="Search cards..."
             value={filters.search}
             onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2.5 sku-inset text-gray-700 rounded-xl border-0 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="w-full pl-10 pr-4 py-2.5 sku-inset text-gray-700 dark:text-gray-200 rounded-xl border-0 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
         </div>
 
-        {/* Display All Toggle */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-600">Display All</span>
-          <div
-            className={`sku-toggle ${!showOwnedOnly ? 'active' : ''}`}
-            onClick={onToggleOwnedOnly}
-          />
+        {/* Collection Filter Toggle */}
+        <div className="flex items-center rounded-xl overflow-hidden sku-inset">
+          <button
+            onClick={() => onCollectionFilterChange('all')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              collectionFilter === 'all'
+                ? 'bg-teal-500 text-white'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => onCollectionFilterChange('owned')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              collectionFilter === 'owned'
+                ? 'bg-teal-500 text-white'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            Owned
+          </button>
+          <button
+            onClick={() => onCollectionFilterChange('missing')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              collectionFilter === 'missing'
+                ? 'bg-teal-500 text-white'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            Missing
+          </button>
+          <button
+            onClick={() => onCollectionFilterChange('wishlist')}
+            className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1 ${
+              collectionFilter === 'wishlist'
+                ? 'bg-pink-500 text-white'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            Wishlist
+          </button>
         </div>
 
         {/* Grid Size Slider */}
@@ -151,7 +191,7 @@ export default function FilterControls({
         {/* Sort Order Button */}
         <button
           onClick={handleSortOrderChange}
-          className="sku-button px-4 py-2.5 text-gray-600 font-medium"
+          className="sku-button px-4 py-2.5 text-gray-600 dark:text-gray-300 font-medium"
           title={sort.order === 'asc' ? 'Ascending' : 'Descending'}
         >
           {sort.order === 'asc' ? (

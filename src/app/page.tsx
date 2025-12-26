@@ -4,13 +4,18 @@ import { useState, useEffect, useMemo } from 'react'
 import { getAllTCGPocketSets, getAllCards } from '@/services/api'
 import { Card, TCGPocketSet, FilterOptions, SortOptions } from '@/types'
 import CardGrid from '@/components/CardGrid'
+import TrainerGallery from '@/components/TrainerGallery'
+import { CardBinder } from '@/components/binder'
+import CardDetailPanel from '@/components/CardDetailPanel'
 import SetSelector, { ALL_SETS_ID } from '@/components/SetSelector'
 import FilterControls from '@/components/FilterControls'
 import CollectionStats from '@/components/CollectionStats'
 import ChatPanel from '@/components/chat/ChatPanel'
 import ChatToggleButton from '@/components/chat/ChatToggleButton'
 import UserMenu from '@/components/UserMenu'
+import ThemeToggle from '@/components/ThemeToggle'
 import { useCollection } from '@/context/CollectionContext'
+import { useWishlist } from '@/context/WishlistContext'
 import { boosterToSetId, singleBoosterSets } from '@/data/boosters'
 
 const RARITY_ORDER: Record<string, number> = {
@@ -31,10 +36,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState({ loaded: 0, total: 0 })
   const [error, setError] = useState<string | null>(null)
-  const [showOwnedOnly, setShowOwnedOnly] = useState(false)
+  const [collectionFilter, setCollectionFilter] = useState<'all' | 'owned' | 'missing' | 'wishlist'>('all')
   const [gridSize, setGridSize] = useState(5)
+  const [activeView, setActiveView] = useState<'cards' | 'trainers' | 'binder'>('cards')
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
 
   const { isOwned, addCards, removeCards } = useCollection()
+  const { isWishlisted } = useWishlist()
 
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
@@ -93,9 +101,22 @@ export default function Home() {
   const availableTypes = useMemo(() => {
     const types = new Set<string>()
     boosterCards.forEach((card) => {
+      // Add Pokemon energy types
       card.types?.forEach((type) => types.add(type))
+      // Add Trainer types (Supporter, Item, etc.)
+      if (card.category === 'Trainer' && card.trainerType) {
+        types.add(card.trainerType)
+      }
     })
-    return Array.from(types).sort()
+    // Sort with Trainer types at the end
+    const trainerTypes = ['Supporter', 'Item', 'Tool', 'Stadium']
+    return Array.from(types).sort((a, b) => {
+      const aIsTrainer = trainerTypes.includes(a)
+      const bIsTrainer = trainerTypes.includes(b)
+      if (aIsTrainer && !bIsTrainer) return 1
+      if (!aIsTrainer && bIsTrainer) return -1
+      return a.localeCompare(b)
+    })
   }, [boosterCards])
 
   const availableRarities = useMemo(() => {
@@ -120,8 +141,12 @@ export default function Home() {
   const filteredCards = useMemo(() => {
     let result = [...boosterCards]
 
-    if (showOwnedOnly) {
+    if (collectionFilter === 'owned') {
       result = result.filter((card) => isOwned(card.id))
+    } else if (collectionFilter === 'missing') {
+      result = result.filter((card) => !isOwned(card.id))
+    } else if (collectionFilter === 'wishlist') {
+      result = result.filter((card) => isWishlisted(card.id))
     }
 
     if (filters.search) {
@@ -132,9 +157,18 @@ export default function Home() {
     }
 
     if (filters.type) {
-      result = result.filter((card) =>
-        card.types?.includes(filters.type)
-      )
+      const trainerTypes = ['Supporter', 'Item', 'Tool', 'Stadium']
+      if (trainerTypes.includes(filters.type)) {
+        // Filter by trainer type
+        result = result.filter((card) =>
+          card.category === 'Trainer' && card.trainerType === filters.type
+        )
+      } else {
+        // Filter by Pokemon energy type
+        result = result.filter((card) =>
+          card.types?.includes(filters.type)
+        )
+      }
     }
 
     if (filters.rarity) {
@@ -168,7 +202,7 @@ export default function Home() {
     })
 
     return result
-  }, [boosterCards, filters, sort, showOwnedOnly, isOwned])
+  }, [boosterCards, filters, sort, collectionFilter, isOwned, isWishlisted])
 
   // Get display name for current selection
   const displayName = useMemo(() => {
@@ -192,12 +226,62 @@ export default function Home() {
       <header className="sku-card mx-4 mt-4 mb-6 p-4 rounded-2xl">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">My Cards</h1>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">My Cards</h1>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <ChatToggleButton />
             <UserMenu />
           </div>
+        </div>
+
+        {/* View Tabs */}
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => setActiveView('cards')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              activeView === 'cards'
+                ? 'bg-teal-500 text-white shadow-md'
+                : 'sku-button text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+              Cards
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveView('trainers')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              activeView === 'trainers'
+                ? 'bg-purple-500 text-white shadow-md'
+                : 'sku-button text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Trainer Gallery
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveView('binder')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              activeView === 'binder'
+                ? 'bg-amber-500 text-white shadow-md'
+                : 'sku-button text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Binder
+            </span>
+          </button>
         </div>
       </header>
 
@@ -209,23 +293,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Set Selector */}
-        <section>
-          <SetSelector
-            sets={sets}
-            cards={allCards}
-            selectedBoosterId={selectedBoosterId}
-            onSelectBooster={setSelectedBoosterId}
-            loading={loading}
-          />
-        </section>
-
         {/* Loading Progress */}
         {loading && loadingProgress.total > 0 && (
           <div className="sku-card p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-700 font-medium">Loading all cards...</span>
-              <span className="text-gray-500 text-sm">
+              <span className="text-gray-700 dark:text-gray-200 font-medium">Loading all cards...</span>
+              <span className="text-gray-500 dark:text-gray-400 text-sm">
                 {loadingProgress.loaded} / {loadingProgress.total} sets
               </span>
             </div>
@@ -238,55 +311,119 @@ export default function Home() {
           </div>
         )}
 
-        {/* Collection Stats */}
-        {!loading && boosterCards.length > 0 && (
-          <CollectionStats cards={boosterCards} setName={displayName} />
+        {/* Trainer Gallery View */}
+        {activeView === 'trainers' && (
+          <TrainerGallery cards={allCards} loading={loading} onCardClick={setSelectedCard} />
         )}
 
-        {/* Filters */}
-        <FilterControls
-          filters={filters}
-          sort={sort}
-          onFilterChange={setFilters}
-          onSortChange={setSort}
-          availableTypes={availableTypes}
-          availableRarities={availableRarities}
-          availableStages={availableStages}
-          showOwnedOnly={showOwnedOnly}
-          onToggleOwnedOnly={() => setShowOwnedOnly(!showOwnedOnly)}
-          gridSize={gridSize}
-          onGridSizeChange={setGridSize}
-        />
+        {/* Binder View */}
+        {activeView === 'binder' && (
+          <>
+            {/* Set Selector */}
+            <section>
+              <SetSelector
+                sets={sets}
+                cards={allCards}
+                selectedBoosterId={selectedBoosterId}
+                onSelectBooster={setSelectedBoosterId}
+                loading={loading}
+              />
+            </section>
 
-        {/* Results Count and Bulk Actions */}
-        {!loading && (
-          <div className="flex items-center justify-between">
-            <p className="text-gray-500 text-sm font-medium">
-              Showing {filteredCards.length} of {boosterCards.length} cards
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => addCards(filteredCards.map(c => c.id))}
-                className="sku-button px-3 py-1.5 text-xs font-medium text-teal-600 hover:text-teal-700"
-              >
-                Add All
-              </button>
-              <button
-                onClick={() => removeCards(filteredCards.map(c => c.id))}
-                className="sku-button px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700"
-              >
-                Remove All
-              </button>
+            {/* Filters */}
+            <FilterControls
+              filters={filters}
+              sort={sort}
+              onFilterChange={setFilters}
+              onSortChange={setSort}
+              availableTypes={availableTypes}
+              availableRarities={availableRarities}
+              availableStages={availableStages}
+              collectionFilter={collectionFilter}
+              onCollectionFilterChange={setCollectionFilter}
+              gridSize={gridSize}
+              onGridSizeChange={setGridSize}
+            />
+
+            {/* 3D Binder */}
+            <div className="h-[600px] relative">
+              <CardBinder
+                cards={filteredCards}
+                onCardClick={setSelectedCard}
+                loading={loading}
+              />
             </div>
-          </div>
+          </>
         )}
 
-        {/* Card Grid */}
-        <CardGrid cards={filteredCards} loading={loading} gridSize={gridSize} />
+        {/* Cards View */}
+        {activeView === 'cards' && (
+          <>
+            {/* Set Selector */}
+            <section>
+              <SetSelector
+                sets={sets}
+                cards={allCards}
+                selectedBoosterId={selectedBoosterId}
+                onSelectBooster={setSelectedBoosterId}
+                loading={loading}
+              />
+            </section>
+
+            {/* Collection Stats */}
+            {!loading && boosterCards.length > 0 && (
+              <CollectionStats cards={boosterCards} setName={displayName} />
+            )}
+
+            {/* Filters */}
+            <FilterControls
+              filters={filters}
+              sort={sort}
+              onFilterChange={setFilters}
+              onSortChange={setSort}
+              availableTypes={availableTypes}
+              availableRarities={availableRarities}
+              availableStages={availableStages}
+              collectionFilter={collectionFilter}
+              onCollectionFilterChange={setCollectionFilter}
+              gridSize={gridSize}
+              onGridSizeChange={setGridSize}
+            />
+
+            {/* Results Count and Bulk Actions */}
+            {!loading && (
+              <div className="flex items-center justify-between">
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                  Showing {filteredCards.length} of {boosterCards.length} cards
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => addCards(filteredCards.map(c => c.id))}
+                    className="sku-button px-3 py-1.5 text-xs font-medium text-teal-600 hover:text-teal-700"
+                  >
+                    Add All
+                  </button>
+                  <button
+                    onClick={() => removeCards(filteredCards.map(c => c.id))}
+                    className="sku-button px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700"
+                  >
+                    Remove All
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Card Grid */}
+            <CardGrid cards={filteredCards} loading={loading} gridSize={gridSize} onCardClick={setSelectedCard} />
+          </>
+        )}
       </main>
 
       {/* Chat Panel */}
       <ChatPanel cards={allCards} sets={sets} />
+
+      {/* Card Detail Panel */}
+      <CardDetailPanel card={selectedCard} onClose={() => setSelectedCard(null)} />
     </div>
   )
 }

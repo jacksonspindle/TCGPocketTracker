@@ -59,6 +59,8 @@ export interface Card {
   weaknesses?: Weakness[];
   retreat?: number;
   description?: string;
+  effect?: string;
+  trainerType?: string;
   set: SetInfo;
   boosters?: Booster[];
   variants?: {
