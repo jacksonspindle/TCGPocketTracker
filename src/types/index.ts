@@ -109,4 +109,5 @@ export interface SortOptions {
   order: SortOrder;
 }
 
-export type Collection = Record<string, boolean>;
+// Collection maps card IDs to their count (0 = not owned, 1+ = owned with duplicates)
+export type Collection = Record<string, number>;

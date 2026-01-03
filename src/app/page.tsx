@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useSession } from 'next-auth/react'
 import { getAllTCGPocketSets, getAllCards } from '@/services/api'
 import { Card, TCGPocketSet, FilterOptions, SortOptions } from '@/types'
 import CardGrid from '@/components/CardGrid'
@@ -14,8 +15,10 @@ import ChatPanel from '@/components/chat/ChatPanel'
 import ChatToggleButton from '@/components/chat/ChatToggleButton'
 import UserMenu from '@/components/UserMenu'
 import ThemeToggle from '@/components/ThemeToggle'
+import LandingPage from '@/components/LandingPage'
 import { useCollection } from '@/context/CollectionContext'
 import { useWishlist } from '@/context/WishlistContext'
+import { useChatContext } from '@/context/ChatContext'
 import { boosterToSetId, singleBoosterSets } from '@/data/boosters'
 
 const RARITY_ORDER: Record<string, number> = {
@@ -30,6 +33,7 @@ const RARITY_ORDER: Record<string, number> = {
 }
 
 export default function Home() {
+  const { status } = useSession()
   const [sets, setSets] = useState<TCGPocketSet[]>([])
   const [selectedBoosterId, setSelectedBoosterId] = useState<string>(ALL_SETS_ID)
   const [allCards, setAllCards] = useState<Card[]>([])
@@ -40,21 +44,38 @@ export default function Home() {
   const [gridSize, setGridSize] = useState(5)
   const [activeView, setActiveView] = useState<'cards' | 'trainers' | 'binder'>('cards')
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
-
-  const { isOwned, addCards, removeCards } = useCollection()
-  const { isWishlisted } = useWishlist()
-
+  const [showDuplicates, setShowDuplicates] = useState(false)
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
     rarity: '',
     type: '',
     stage: '',
   })
-
   const [sort, setSort] = useState<SortOptions>({
     field: 'localId',
     order: 'asc',
   })
+
+  const { isOwned, getCardCount, addCards, removeCards } = useCollection()
+  const { isWishlisted } = useWishlist()
+  const { setOnApplyFilters } = useChatContext()
+
+  // Register chat filter callback
+  useEffect(() => {
+    setOnApplyFilters((chatFilters) => {
+      setFilters({
+        search: chatFilters.search || '',
+        rarity: chatFilters.rarity || '',
+        type: chatFilters.type || '',
+        stage: chatFilters.stage || '',
+      })
+      setCollectionFilter(chatFilters.collectionFilter || 'all')
+      setSelectedBoosterId(ALL_SETS_ID)
+      setActiveView('cards')
+    })
+
+    return () => setOnApplyFilters(null)
+  }, [setOnApplyFilters])
 
   // Fetch all data on mount
   useEffect(() => {
@@ -204,6 +225,28 @@ export default function Home() {
     return result
   }, [boosterCards, filters, sort, collectionFilter, isOwned, isWishlisted])
 
+  // Expand cards to show duplicates if enabled
+  const displayCards = useMemo(() => {
+    if (!showDuplicates) {
+      return filteredCards
+    }
+
+    // Expand cards based on their count
+    const expanded: Card[] = []
+    for (const card of filteredCards) {
+      const count = getCardCount(card.id)
+      if (count > 1) {
+        // Add the card multiple times for duplicates
+        for (let i = 0; i < count; i++) {
+          expanded.push(card)
+        }
+      } else {
+        expanded.push(card)
+      }
+    }
+    return expanded
+  }, [filteredCards, showDuplicates, getCardCount])
+
   // Get display name for current selection
   const displayName = useMemo(() => {
     if (selectedBoosterId === ALL_SETS_ID) {
@@ -220,12 +263,31 @@ export default function Home() {
     return selectedBoosterId
   }, [selectedBoosterId, sets])
 
+  // Show loading spinner while checking auth status
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // Show landing page for unauthenticated users
+  if (status === 'unauthenticated') {
+    return <LandingPage />
+  }
+
   return (
     <div className="min-h-screen pb-8">
       {/* Header */}
       <header className="sku-card mx-4 mt-4 mb-6 p-4 rounded-2xl">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
+            <img
+              src="/pockettrackerIcon.png"
+              alt="PocketTrack"
+              className="w-10 h-10 rounded-xl"
+            />
             <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">My Cards</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -343,12 +405,14 @@ export default function Home() {
               onCollectionFilterChange={setCollectionFilter}
               gridSize={gridSize}
               onGridSizeChange={setGridSize}
+              showDuplicates={showDuplicates}
+              onShowDuplicatesChange={setShowDuplicates}
             />
 
             {/* 3D Binder */}
             <div className="h-[600px] relative">
               <CardBinder
-                cards={filteredCards}
+                cards={displayCards}
                 onCardClick={setSelectedCard}
                 loading={loading}
               />
@@ -388,13 +452,20 @@ export default function Home() {
               onCollectionFilterChange={setCollectionFilter}
               gridSize={gridSize}
               onGridSizeChange={setGridSize}
+              showDuplicates={showDuplicates}
+              onShowDuplicatesChange={setShowDuplicates}
             />
 
             {/* Results Count and Bulk Actions */}
             {!loading && (
               <div className="flex items-center justify-between">
                 <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                  Showing {filteredCards.length} of {boosterCards.length} cards
+                  Showing {displayCards.length} of {boosterCards.length} cards
+                  {showDuplicates && displayCards.length !== filteredCards.length && (
+                    <span className="text-amber-500 ml-1">
+                      ({displayCards.length - filteredCards.length} duplicates)
+                    </span>
+                  )}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -414,7 +485,7 @@ export default function Home() {
             )}
 
             {/* Card Grid */}
-            <CardGrid cards={filteredCards} loading={loading} gridSize={gridSize} onCardClick={setSelectedCard} />
+            <CardGrid cards={displayCards} loading={loading} gridSize={gridSize} onCardClick={setSelectedCard} />
           </>
         )}
       </main>

@@ -1,9 +1,14 @@
-import { ChatContextData, ClaudeMessage } from '../types/chat'
+import { ChatContextData, ClaudeMessage, FilterAction } from '../types/chat'
+
+export interface ChatResponse {
+  text: string;
+  filterAction?: FilterAction;
+}
 
 export async function sendChatMessage(
   messages: ClaudeMessage[],
   contextData: ChatContextData
-): Promise<string> {
+): Promise<ChatResponse> {
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: {
@@ -21,5 +26,8 @@ export async function sendChatMessage(
   }
 
   const data = await response.json()
-  return data.text
+  return {
+    text: data.text,
+    filterAction: data.filterAction,
+  }
 }

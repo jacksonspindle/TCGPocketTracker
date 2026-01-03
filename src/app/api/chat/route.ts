@@ -6,19 +6,19 @@ const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
 function buildSystemPrompt(contextData: ChatContextData): string {
   const { collectionSummary, boosterSummaries } = contextData
 
-  // Format rarity stats
+  // Format rarity stats (with wishlist)
   const rarityStats = Object.entries(collectionSummary.byRarity)
-    .map(([rarity, stats]) => `${rarity}: ${stats.owned}/${stats.total}`)
+    .map(([rarity, stats]) => `${rarity}: ${stats.owned}/${stats.total} (${stats.wishlisted || 0} wishlisted)`)
     .join(', ')
 
-  // Format type stats
+  // Format type stats (with wishlist)
   const typeStats = Object.entries(collectionSummary.byType)
-    .map(([type, stats]) => `${type}: ${stats.owned}/${stats.total}`)
+    .map(([type, stats]) => `${type}: ${stats.owned}/${stats.total} (${stats.wishlisted || 0} wishlisted)`)
     .join(', ')
 
-  // Format category stats
+  // Format category stats (with wishlist)
   const categoryStats = Object.entries(collectionSummary.byCategory)
-    .map(([category, stats]) => `${category}: ${stats.owned}/${stats.total}`)
+    .map(([category, stats]) => `${category}: ${stats.owned}/${stats.total} (${stats.wishlisted || 0} wishlisted)`)
     .join(', ')
 
   // Format cross-dimensional: rarity + category
@@ -55,14 +55,15 @@ function buildSystemPrompt(contextData: ChatContextData): string {
 CURRENT COLLECTION STATE:
 - Total Cards: ${collectionSummary.totalCards}
 - Owned: ${collectionSummary.ownedCards} (${collectionSummary.completionPercentage}% complete)
+- Wishlisted: ${collectionSummary.wishlistedCards} cards
 
-BY RARITY (owned/total):
+BY RARITY (owned/total, wishlisted):
 ${rarityStats}
 
-BY TYPE (owned/total):
+BY TYPE (owned/total, wishlisted):
 ${typeStats}
 
-BY CATEGORY (owned/total):
+BY CATEGORY (owned/total, wishlisted):
 ${categoryStats}
 
 CARDS BY RARITY AND CATEGORY (for questions like "how many Two Star Trainers"):
@@ -86,7 +87,33 @@ GUIDELINES:
 - Categories are: Pokemon, Trainer (includes Supporter items)
 - If asked about specific card names not in the data, explain you have aggregate statistics only
 - Format responses clearly with bullet points when listing multiple items
-- Keep responses focused and actionable`
+- Keep responses focused and actionable
+
+SMART SEARCH FEATURE:
+When the user asks to "show", "find", "filter", or "search" for cards, you can provide a filter action button.
+Include a JSON block at the END of your response in this exact format:
+
+\`\`\`filter
+{"label": "View Fire Types", "filters": {"type": "Fire", "collectionFilter": "owned"}}
+\`\`\`
+
+Available filter options:
+- search: string (card name search)
+- rarity: "One Diamond" | "Two Diamond" | "Three Diamond" | "Four Diamond" | "One Star" | "Two Star" | "Three Star" | "Crown" | "One Shiny" | "Two Shiny"
+- type: "Grass" | "Fire" | "Water" | "Lightning" | "Psychic" | "Fighting" | "Darkness" | "Metal" | "Dragon" | "Colorless"
+- stage: "Basic" | "Stage 1" | "Stage 2"
+- collectionFilter: "all" | "owned" | "missing" | "wishlist"
+
+IMPORTANT: Use exact rarity values. "Crown" (not "Crown Rare") for the rarest cards.
+
+Examples:
+- "Show my water types" → filters: {"type": "Water", "collectionFilter": "owned"}
+- "What Crown cards am I missing?" → filters: {"rarity": "Crown", "collectionFilter": "missing"}
+- "Find Pikachu cards" → filters: {"search": "Pikachu"}
+- "Show missing Fire Pokemon" → filters: {"type": "Fire", "collectionFilter": "missing"}
+- "Show my shiny cards" → filters: {"rarity": "One Shiny", "collectionFilter": "owned"}
+
+Only include the filter block when the user explicitly wants to see/find/filter cards. For general questions about stats, just answer normally.`
 }
 
 export async function POST(request: NextRequest) {
@@ -145,7 +172,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Empty response from API' }, { status: 500 })
     }
 
-    return NextResponse.json({ text: data.content[0].text })
+    let text = data.content[0].text
+    let filterAction = null
+
+    // Extract filter action if present - try multiple patterns
+    const filterMatch = text.match(/```filter\n([\s\S]*?)\n```/) ||
+                        text.match(/```filter\s*([\s\S]*?)\s*```/) ||
+                        text.match(/```json\n([\s\S]*?)\n```/)
+
+    if (filterMatch) {
+      try {
+        const filterData = JSON.parse(filterMatch[1].trim())
+        filterAction = {
+          type: 'filter' as const,
+          label: filterData.label,
+          filters: filterData.filters,
+        }
+        // Remove the filter block from the text
+        text = text.replace(/```(?:filter|json)\s*[\s\S]*?\s*```/, '').trim()
+      } catch (e) {
+        // Silently handle parse errors
+      }
+    }
+
+    return NextResponse.json({ text, filterAction })
   } catch (error) {
     console.error('Chat API error:', error)
     return NextResponse.json(

@@ -1,7 +1,15 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
-import { ChatMessage } from '../types/chat'
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { ChatMessage, FilterAction } from '../types/chat'
+
+interface ApplyFiltersOptions {
+  search?: string;
+  rarity?: string;
+  type?: string;
+  stage?: string;
+  collectionFilter?: 'all' | 'owned' | 'missing' | 'wishlist';
+}
 
 interface ChatContextType {
   messages: ChatMessage[];
@@ -13,6 +21,9 @@ interface ChatContextType {
   setIsLoading: (loading: boolean) => void;
   error: string | null;
   setError: (error: string | null) => void;
+  onApplyFilters: ((filters: ApplyFiltersOptions) => void) | null;
+  setOnApplyFilters: (callback: ((filters: ApplyFiltersOptions) => void) | null) => void;
+  applyFilterAction: (action: FilterAction) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -22,6 +33,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [onApplyFiltersRef, setOnApplyFiltersRef] = useState<{ callback: ((filters: ApplyFiltersOptions) => void) | null }>({ callback: null });
+
+  const setOnApplyFilters = useCallback((callback: ((filters: ApplyFiltersOptions) => void) | null) => {
+    setOnApplyFiltersRef({ callback });
+  }, []);
+
+  const onApplyFilters = onApplyFiltersRef.callback;
 
   const addMessage = (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     setMessages(prev => [...prev, {
@@ -32,6 +50,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   };
 
   const clearMessages = () => setMessages([]);
+
+  const applyFilterAction = useCallback((action: FilterAction) => {
+    if (onApplyFilters) {
+      onApplyFilters(action.filters);
+      setIsOpen(false);
+    }
+  }, [onApplyFilters]);
 
   return (
     <ChatContext.Provider value={{
@@ -44,6 +69,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setIsLoading,
       error,
       setError,
+      onApplyFilters,
+      setOnApplyFilters,
+      applyFilterAction,
     }}>
       {children}
     </ChatContext.Provider>

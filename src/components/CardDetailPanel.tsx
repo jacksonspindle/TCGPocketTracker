@@ -85,12 +85,13 @@ function getCardAvailability(card: Card): { type: 'boosters' | 'set'; items: { i
 }
 
 export default function CardDetailPanel({ card, onClose }: CardDetailPanelProps) {
-  const { isOwned, toggleCard } = useCollection()
+  const { isOwned, getCardCount, setCardCount } = useCollection()
   const { isWishlisted, toggleWishlist } = useWishlist()
 
   if (!card) return null
 
   const owned = isOwned(card.id)
+  const count = getCardCount(card.id)
   const wishlisted = isWishlisted(card.id)
   const imageUrl = card.image ? `${card.image}/high.webp` : null
 
@@ -160,39 +161,64 @@ export default function CardDetailPanel({ card, onClose }: CardDetailPanelProps)
                         </div>
                       )}
 
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 mt-4">
-                        <button
-                          onClick={() => toggleCard(card.id)}
-                          className={`flex-1 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-                            owned
-                              ? 'bg-teal-500 text-white'
-                              : 'bg-white/10 text-white hover:bg-white/20'
-                          }`}
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          {owned ? 'Owned' : 'Add to Collection'}
-                        </button>
-                        <button
-                          onClick={() => toggleWishlist(card.id)}
-                          className={`px-4 py-2.5 rounded-xl transition-all ${
-                            wishlisted
-                              ? 'bg-pink-500 text-white'
-                              : 'bg-white/10 text-white hover:bg-white/20'
-                          }`}
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill={wishlisted ? 'currentColor' : 'none'}
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
+                      {/* Collection Counter */}
+                      <div className="mt-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-300">Owned</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setCardCount(card.id, Math.max(0, count - 1))}
+                              className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={count === 0}
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                              </svg>
+                            </button>
+                            <span className={`w-10 text-center text-lg font-bold ${owned ? 'text-teal-400' : 'text-gray-400'}`}>
+                              {count}
+                            </span>
+                            <button
+                              onClick={() => setCardCount(card.id, count + 1)}
+                              className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="flex gap-2">
+                          {!owned && (
+                            <button
+                              onClick={() => setCardCount(card.id, 1)}
+                              className="flex-1 py-2 rounded-xl font-medium text-sm bg-teal-500 hover:bg-teal-600 text-white transition-colors"
+                            >
+                              Add to Collection
+                            </button>
+                          )}
+                          <button
+                            onClick={() => toggleWishlist(card.id)}
+                            className={`${owned ? 'flex-1' : ''} px-4 py-2 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                              wishlisted
+                                ? 'bg-pink-500 text-white'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                        </button>
+                            <svg
+                              className="w-5 h-5"
+                              fill={wishlisted ? 'currentColor' : 'none'}
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            {owned && <span className="text-sm font-medium">{wishlisted ? 'Wishlisted' : 'Wishlist'}</span>}
+                          </button>
+                        </div>
                       </div>
                     </div>
 

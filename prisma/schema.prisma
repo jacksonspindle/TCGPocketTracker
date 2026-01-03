@@ -63,9 +63,10 @@ model CardCollection {
   id        String   @id @default(cuid())
   userId    String
   cardId    String   // TCGDex card ID (e.g., "A1-001")
-  owned     Boolean  @default(true)
+  count     Int      @default(1)  // Number of copies owned (0 = not owned, 1+ = owned)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([userId, cardId])
   @@index([userId])

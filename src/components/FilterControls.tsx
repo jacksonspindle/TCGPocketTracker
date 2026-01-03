@@ -17,6 +17,8 @@ interface FilterControlsProps {
   onCollectionFilterChange: (filter: CollectionFilter) => void;
   gridSize: number;
   onGridSizeChange: (size: number) => void;
+  showDuplicates?: boolean;
+  onShowDuplicatesChange?: (show: boolean) => void;
 }
 
 export default function FilterControls({
@@ -31,6 +33,8 @@ export default function FilterControls({
   onCollectionFilterChange,
   gridSize,
   onGridSizeChange,
+  showDuplicates = false,
+  onShowDuplicatesChange,
 }: FilterControlsProps) {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({ ...filters, search: e.target.value });
@@ -204,6 +208,24 @@ export default function FilterControls({
             </svg>
           )}
         </button>
+
+        {/* Show Duplicates Toggle */}
+        {onShowDuplicatesChange && (
+          <button
+            onClick={() => onShowDuplicatesChange(!showDuplicates)}
+            className={`sku-button px-4 py-2.5 font-medium text-sm flex items-center gap-2 transition-colors ${
+              showDuplicates
+                ? 'bg-amber-500 text-white'
+                : 'text-gray-600 dark:text-gray-300'
+            }`}
+            title={showDuplicates ? 'Hide duplicate cards' : 'Show duplicate cards separately'}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Duplicates
+          </button>
+        )}
 
         {/* Clear Filters */}
         {hasActiveFilters && (

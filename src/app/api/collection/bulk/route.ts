@@ -11,33 +11,61 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { cardIds } = await request.json()
+    const { cardIds, cards } = await request.json()
 
-    if (!Array.isArray(cardIds)) {
-      return NextResponse.json({ error: 'Card IDs array required' }, { status: 400 })
+    // Support both formats:
+    // 1. cardIds: string[] - sets count to 1 for each
+    // 2. cards: Record<string, number> - sets specific counts
+
+    if (cards && typeof cards === 'object') {
+      // New format with counts
+      const entries = Object.entries(cards) as [string, number][]
+
+      for (const [cardId, count] of entries) {
+        await prisma.cardCollection.upsert({
+          where: {
+            userId_cardId: {
+              userId: session.user.id!,
+              cardId,
+            },
+          },
+          update: { count },
+          create: {
+            userId: session.user.id!,
+            cardId,
+            count,
+          },
+        })
+      }
+
+      return NextResponse.json({ success: true, count: entries.length })
     }
 
-    // Use createMany with skipDuplicates for efficiency
-    await prisma.cardCollection.createMany({
-      data: cardIds.map(cardId => ({
-        userId: session.user.id!,
-        cardId,
-        owned: true,
-      })),
-      skipDuplicates: true,
-    })
+    if (Array.isArray(cardIds)) {
+      // Legacy format - set count to 1 for each card
+      await prisma.cardCollection.createMany({
+        data: cardIds.map(cardId => ({
+          userId: session.user.id!,
+          cardId,
+          count: 1,
+        })),
+        skipDuplicates: true,
+      })
 
-    // Update any existing records that were set to owned: false
-    await prisma.cardCollection.updateMany({
-      where: {
-        userId: session.user.id,
-        cardId: { in: cardIds },
-        owned: false,
-      },
-      data: { owned: true },
-    })
+      // Update any existing records that were set to count: 0
+      await prisma.cardCollection.updateMany({
+        where: {
+          userId: session.user.id,
+          cardId: { in: cardIds },
+          count: 0,
+        },
+        data: { count: 1 },
+      })
 
-    return NextResponse.json({ success: true, count: cardIds.length })
+      return NextResponse.json({ success: true, count: cardIds.length })
+    }
+
+    return NextResponse.json({ error: 'Card IDs array or cards object required' }, { status: 400 })
   } catch (error) {
     console.error('Error bulk importing cards:', error)
     return NextResponse.json({ error: 'Failed to import cards' }, { status: 500 })

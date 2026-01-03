@@ -40,7 +40,7 @@ export function useBoosterSummaries(
         const missingByRarity: Record<string, number> = {};
 
         for (const card of boosterCards) {
-          const isOwned = collection[card.id] === true;
+          const isOwned = (collection[card.id] || 0) > 0;
 
           if (isOwned) {
             ownedCount++;

@@ -1,7 +1,20 @@
+export interface FilterAction {
+  type: 'filter';
+  label: string;
+  filters: {
+    search?: string;
+    rarity?: string;
+    type?: string;
+    stage?: string;
+    collectionFilter?: 'all' | 'owned' | 'missing' | 'wishlist';
+  };
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  filterAction?: FilterAction;
   timestamp: Date;
 }
 
@@ -9,9 +22,10 @@ export interface CollectionSummary {
   totalCards: number;
   ownedCards: number;
   completionPercentage: number;
-  byRarity: Record<string, { owned: number; total: number }>;
-  byType: Record<string, { owned: number; total: number }>;
-  byCategory: Record<string, { owned: number; total: number }>;
+  wishlistedCards: number;
+  byRarity: Record<string, { owned: number; total: number; wishlisted: number }>;
+  byType: Record<string, { owned: number; total: number; wishlisted: number }>;
+  byCategory: Record<string, { owned: number; total: number; wishlisted: number }>;
   byStage: Record<string, { owned: number; total: number }>;
   // Cross-dimensional breakdowns for nuanced queries
   byRarityAndCategory: Record<string, Record<string, { owned: number; total: number }>>;

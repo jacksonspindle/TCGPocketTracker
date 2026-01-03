@@ -10,9 +10,10 @@ interface CardItemProps {
 }
 
 export default function CardItem({ card, onCardClick }: CardItemProps) {
-  const { isOwned, toggleCard } = useCollection();
+  const { isOwned, getCardCount, toggleCard } = useCollection();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const owned = isOwned(card.id);
+  const count = getCardCount(card.id);
   const wishlisted = isWishlisted(card.id);
 
   const imageUrl = card.image ? `${card.image}/high.webp` : null;
@@ -88,6 +89,13 @@ export default function CardItem({ card, onCardClick }: CardItemProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </button>
+
+        {/* Duplicate count badge - show when count > 1 */}
+        {count > 1 && (
+          <div className="absolute bottom-1.5 right-1.5 bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-md min-w-[20px] text-center">
+            x{count}
+          </div>
+        )}
       </div>
 
       {/* Card Name - only show for owned cards like in the app */}
